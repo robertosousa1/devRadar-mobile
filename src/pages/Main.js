@@ -4,12 +4,29 @@ import MapView, { Marker, Callout } from 'react-native-maps';
 import { requestPermissionsAsync, getCurrentPositionAsync } from 'expo-location';
 import { MaterialIcons } from '@expo/vector-icons';
 
-import api from '../services/api'
+import api from '../services/api';
+import { connect, disconnect, subscribeToNewDevs } from '../services/socket';
 
 function Main({ navigation }) {
   const [devs, setDevs] = useState([]);
   const [currentRegion, setCurrentRegion] = useState(null);
   const [techs, setTechs] = useState([]);
+
+  function setupWebsocket() {
+    disconnect();
+
+    const { latitude, longitude } = currentRegion;
+
+    connect(
+      latitude, 
+      longitude,
+      techs
+    );
+  }
+
+  useEffect(() => {
+    subscribeToNewDevs(dev => setDevs([...devs, dev]));
+  }, [devs]);
 
   useEffect(() => {
     async function loadInitialPosition() {
@@ -46,6 +63,7 @@ function Main({ navigation }) {
     });
 
     setDevs(response.data.devs)
+    setupWebsocket();
   }
 
   function handleRegionChanged(region) {
